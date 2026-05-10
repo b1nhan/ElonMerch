@@ -1,0 +1,38 @@
+# ELon Merch - Ignore Docker artifacts
+.dockerignore
+Dockerfile*
+
+# Node
+node_modules/
+dist/
+.parcel-cache/
+
+# Docker
+docker-compose.override.yml
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# PHP
+vendor/
+.php_cs.cache
+.phpunit.result.cache
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Misc
+.cache/
+tmp/

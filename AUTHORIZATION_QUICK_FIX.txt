@@ -1,0 +1,152 @@
+# Authorization Header Fix - Quick Reference
+
+## What Was Wrong
+Authorization header arriving as EMPTY string ("") at PHP, even though frontend was sending it
+
+## What Was Fixed (4 Files)
+✅ nginx.conf - Explicit fastcgi_param HTTP_AUTHORIZATION $http_authorization
+✅ api/index.php - Authorization header initialization at TOP of file  
+✅ api/middleware/CorsMiddleware.php - Added Authorization to CORS headers
+✅ api/debug_auth.php - Enhanced diagnostics
+
+## Fastest Fix (2 Commands)
+```bash
+docker-compose down && docker-compose build --no-cache && docker-compose up -d
+sleep 5
+curl -X GET http://localhost:8000/debug_auth.php -H "Authorization: Bearer test123"
+```
+
+Expected response should show:
+```
+"http_authorization_present": true
+"overall_status": "✅ Configuration OK"
+```
+
+## If That Doesn't Work
+
+### 1. Check nginx config loaded
+```bash
+docker exec elonmerch_nginx grep "HTTP_AUTHORIZATION" /etc/nginx/nginx.conf
+# Should return: fastcgi_param HTTP_AUTHORIZATION $http_authorization;
+```
+
+### 2. Check nginx syntax
+```bash
+docker exec elonmerch_nginx nginx -t
+# Should return: configuration file ... syntax is ok
+```
+
+### 3. Check PHP has Authorization header
+```bash
+curl -v http://localhost:8000/debug_auth.php \
+  -H "Authorization: Bearer test123" | grep -i authorization
+```
+
+### 4. Full restart
+```bash
+docker-compose down -v
+docker-compose build --no-cache --pull
+docker-compose up -d
+sleep 10
+curl http://localhost:8000/debug_auth.php -H "Authorization: Bearer test123"
+```
+
+## Test Flow
+
+1. Debug endpoint shows Authorization header OK?
+   → Go to step 2
+
+2. Login works and returns token?
+   ```bash
+   curl -X POST http://localhost:8000/auth/login \
+     -H "Content-Type: application/json" \
+     -d '{"email":"admin@example.com","password":"password123"}'
+   ```
+   → Got token in response? Go to step 3
+
+3. Protected endpoint accepts token?
+   ```bash
+   curl -X GET http://localhost:8000/auth/profile \
+     -H "Authorization: Bearer <token_from_step_2>"
+   ```
+   → Got user profile (not 401)? Go to step 4
+
+4. Admin Dashboard works?
+   - Open http://localhost:8000
+   - Login
+   - Admin → Events Management
+   - Add Event
+   - Should work without 401
+
+## Key Changes Made
+
+### nginx.conf
+```
+location ~ \.php$ {
+    include fastcgi_params;
+    fastcgi_param HTTP_AUTHORIZATION $http_authorization;  ← KEY LINE
+}
+```
+
+### api/index.php (top of file)
+```php
+// STEP 1: INITIALIZE AUTHORIZATION HEADER
+if (!isset($_SERVER['HTTP_AUTHORIZATION'])) {
+    if (isset($_SERVER['Authorization'])) {
+        $_SERVER['HTTP_AUTHORIZATION'] = $_SERVER['Authorization'];
+    }
+    elseif (function_exists('apache_request_headers')) {
+        // fallback 1
+    }
+    elseif (function_exists('getallheaders')) {
+        // fallback 2
+    }
+}
+```
+
+### CorsMiddleware
+```php
+private $allowed_headers = [
+    'Content-Type', 
+    'Authorization',  ← NOW INCLUDED
+    'X-Requested-With', 
+    'Accept'
+];
+
+private $expose_headers = [
+    'Content-Length', 
+    'X-Total-Count', 
+    'Authorization'   ← NOW INCLUDED
+];
+```
+
+## Common Issues
+
+| Problem | Solution |
+|---------|----------|
+| Still getting 401 | Verify Authorization header reached PHP with debug_auth.php |
+| nginx not starting | Run: `docker exec elonmerch_nginx nginx -t` |
+| PHP container crash | Check logs: `docker-compose logs php` |
+| CORS preflight failing | Verify Authorization in CorsMiddleware allowed_headers |
+| Token empty string | Check JWT_SECRET is loaded in db.php |
+
+## Nuclear Option
+```bash
+docker-compose down -v && \
+docker image rm nginx:1.25-alpine 2>/dev/null ; \
+docker-compose build --no-cache && \
+docker-compose up -d && \
+sleep 10 && \
+curl http://localhost:8000/debug_auth.php -H "Authorization: Bearer test"
+```
+
+## Documentation
+- AUTHORIZATION_HEADER_FIX_COMMANDS.md - Full Docker commands
+- AUTHORIZATION_HEADER_COMPLETE_FIX.md - Comprehensive explanation
+
+## Status
+✅ 4 files updated
+✅ 2 documentation files created
+✅ Ready to test and deploy
+
+Run the fastest fix command above and test!

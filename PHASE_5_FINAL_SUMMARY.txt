@@ -1,0 +1,380 @@
+```
+╔════════════════════════════════════════════════════════════════════════════╗
+║                 PHASE 5: ADMIN DASHBOARD INITIALIZATION                    ║
+║                                                                            ║
+║                             ✅ COMPLETE                                   ║
+║                                                                            ║
+║                        Delivery Date: May 10, 2024                         ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+
+📦 DELIVERABLES
+═══════════════════════════════════════════════════════════════════════════
+
+✅ 4 Reusable Components (8.5 KB)
+   • AdminLayout.jsx - Main layout wrapper with auth check
+   • Sidebar.jsx - Navigation sidebar with Lucide icons
+   • AdminHeader.jsx - Top header with user menu & notifications
+   • StatCard.jsx - Statistics card component
+
+✅ 5 Admin Pages (10+ KB)
+   • AdminDashboard.jsx - Main dashboard with stats & orders
+   • AdminEvents.jsx - Events management stub
+   • AdminMerchandise.jsx - Merchandise management stub
+   • AdminOrders.jsx - Orders management stub
+   • AdminUsers.jsx - Users management stub
+
+✅ Complete Documentation (11.5 KB)
+   • PHASE_5_INTEGRATION_GUIDE.md - Setup and routing instructions
+
+
+🎨 DESIGN SYSTEM IMPLEMENTED
+═══════════════════════════════════════════════════════════════════════════
+
+✅ Colors
+   • Primary: #4054B2 (active states, buttons, accents)
+   • Background: #F8FAFF (main page background)
+   • Cards: white (content containers)
+   • Text: slate-900 (headings), slate-500 (secondary)
+   • Status: Green/Yellow/Blue/Red badges
+
+✅ Typography
+   • Headings: text-slate-900 font-bold
+   • Labels: text-slate-500 font-medium
+   • Body: text-slate-700
+
+✅ Border Radius
+   • Large cards: rounded-3xl (24px)
+   • Buttons: rounded-2xl (16px)
+   • Small elements: rounded-lg (8px)
+   • Icons: rounded-2xl/rounded-lg
+
+✅ Shadows
+   • Card shadows: shadow-sm, shadow-md
+   • Hover states: shadow-md
+   • Depth: shadow-lg, shadow-xl
+
+
+🏗️ LAYOUT STRUCTURE
+═══════════════════════════════════════════════════════════════════════════
+
+Desktop Layout (lg+):
+┌─────────────────────────────────────────────────────────────┐
+│                        ADMIN HEADER                         │
+├────────────────────┬──────────────────────────────────────┤
+│                    │                                       │
+│    SIDEBAR         │         MAIN CONTENT                 │
+│  (Fixed 272px)     │      (Flexible Width)                │
+│                    │                                       │
+│  • Dashboard       │  Page Title & Stats                 │
+│  • Events          │  ┌─────────────────────────────┐    │
+│  • Merchandise     │  │ StatCard │ StatCard         │    │
+│  • Orders          │  │ StatCard │ StatCard         │    │
+│  • Users           │  └─────────────────────────────┘    │
+│                    │                                       │
+│  Back to Store     │  Recent Orders Table                 │
+│  Logout            │                                       │
+└────────────────────┴──────────────────────────────────────┘
+
+Mobile Layout (md and below):
+┌─────────────────────────────────────────────────────────────┐
+│ ☰  ADMIN HEADER                                             │
+├─────────────────────────────────────────────────────────────┤
+│  Sidebar (Hidden - Opens as Overlay)                        │
+├─────────────────────────────────────────────────────────────┤
+│            MAIN CONTENT                                     │
+│         (Full Width)                                        │
+└─────────────────────────────────────────────────────────────┘
+
+
+🎯 COMPONENTS OVERVIEW
+═══════════════════════════════════════════════════════════════════════════
+
+AdminLayout
+├── Purpose: Main wrapper component
+├── Features:
+│   • Authentication check (redirects if not logged in)
+│   • Sidebar + Header integration
+│   • Main content area with max-width
+│   • Dark overlay on mobile when sidebar open
+└── Props: children
+
+Sidebar
+├── Purpose: Navigation menu with Lucide icons
+├── Menu Items:
+│   • Dashboard (LayoutDashboard icon)
+│   • Events (Ticket icon)
+│   • Merchandise (ShoppingBag icon)
+│   • Orders (Package icon)
+│   • Users (Users icon)
+├── Features:
+│   • Active state highlighting (#4054B2 blue)
+│   • Mobile responsive (collapsible)
+│   • Bottom actions: Back to Store, Logout
+│   • Lucide icons for all items
+└── Props: isOpen, onClose
+
+AdminHeader
+├── Purpose: Top navigation bar
+├── Features:
+│   • Mobile menu toggle button
+│   • Welcome message (with user name)
+│   • Notifications bell (with red dot)
+│   • Settings button
+│   • User dropdown menu
+│   • Profile info in dropdown
+│   • Logout option
+└── Props: onMenuToggle
+
+StatCard
+├── Purpose: Display statistics
+├── Features:
+│   • Icon on the right (background highlight)
+│   • Trend indicator (up/down)
+│   • Large font value
+│   • Rounded corners & shadow
+│   • Hover effect
+└── Props: icon, label, value, trend, trendUp
+
+AdminDashboard
+├── Purpose: Main dashboard overview
+├── Sections:
+│   1. Page Header (title + description)
+│   2. Stats Grid (4 cards: Revenue, Tickets, Orders, Users)
+│   3. Recent Orders Table (with status badges)
+│   4. Placeholder sections (Charts, Quick Actions)
+├── Features:
+│   • Vietnamese currency formatting
+│   • Status badges with colors
+│   • Sortable columns (placeholder)
+│   • View button for each order
+│   • Quick action buttons
+└── Data: Mock data (ready for API integration)
+
+
+📊 DASHBOARD FEATURES
+═══════════════════════════════════════════════════════════════════════════
+
+Statistics Cards (4):
+1. Total Revenue
+   • Value: 45,250,000₫
+   • Icon: TrendingUp
+   • Trend: +12.5%
+
+2. Tickets Sold
+   • Value: 1,250
+   • Icon: Package
+   • Trend: +8.2%
+
+3. Total Orders
+   • Value: 324
+   • Icon: ShoppingCart
+   • Trend: +5.1%
+
+4. Active Users
+   • Value: 156
+   • Icon: Users
+   • Trend: +3.7%
+
+Recent Orders Table:
+• Order ID (e.g., ORD-2024-00001)
+• Customer name
+• Amount (formatted as VND)
+• Status (badge: Completed/Pending/Shipped/Cancelled)
+• Date
+• Action button (View)
+
+Quick Actions:
+• Add New Event button
+• Add New Product button
+• View Analytics button
+
+
+📱 RESPONSIVE DESIGN
+═══════════════════════════════════════════════════════════════════════════
+
+Desktop (lg: 1024px+):
+✅ Fixed sidebar always visible
+✅ Full layout with content
+✅ Stats grid 4 columns
+
+Tablet (md: 768px - 1023px):
+✅ Sidebar hidden by default
+✅ Menu toggle visible
+✅ Stats grid 2 columns
+✅ Full width content
+
+Mobile (sm: 640px - 767px):
+✅ Sidebar as overlay
+✅ Menu toggle button
+✅ Stats grid 1 column
+✅ Compact table
+✅ Touch-friendly buttons
+
+Extra Small (< 640px):
+✅ Full mobile experience
+✅ Overlay sidebar
+✅ Optimized spacing
+✅ Readable fonts
+
+
+🔐 AUTHENTICATION FLOW
+═══════════════════════════════════════════════════════════════════════════
+
+1. User Login
+   ├── POST /auth/login (API call)
+   ├── Receive JWT token
+   ├── Store in localStorage
+   └── Store user data in localStorage
+
+2. Access Admin Dashboard
+   ├── Navigate to /admin/dashboard
+   ├── AdminLayout checks localStorage
+   ├── If token exists: Show dashboard
+   └── If no token: Redirect to home
+
+3. User Menu Dropdown
+   ├── Display user name & email
+   ├── Profile settings link
+   ├── Preferences link
+   └── Logout button
+
+4. Logout
+   ├── Clear token from localStorage
+   ├── Clear user from localStorage
+   ├── Redirect to home page
+
+
+🛠️ INTEGRATION CHECKLIST
+═══════════════════════════════════════════════════════════════════════════
+
+STEP 1: Copy Files
+✅ Copy all files from src/admin/ to your project
+
+STEP 2: Update App.jsx
+□ Add imports for admin pages:
+  • AdminDashboard
+  • AdminEvents
+  • AdminMerchandise
+  • AdminOrders
+  • AdminUsers
+
+□ Add routes in <Routes>:
+  • /admin/dashboard
+  • /admin/events
+  • /admin/merchandise
+  • /admin/orders
+  • /admin/users
+
+STEP 3: Test Integration
+□ npm run dev (start frontend)
+□ docker-compose up -d (start backend)
+□ Navigate to http://localhost:5173
+□ Login with admin@elonmerch.com / password123
+□ Access /admin/dashboard
+□ Verify sidebar navigation
+□ Test logout button
+
+STEP 4: Verify Styling
+□ Check colors match design system
+□ Check border radius on cards
+□ Check shadows appear
+□ Check responsive layout
+□ Check active states
+
+
+📝 COMPLETE UPDATED APP.JSX
+═══════════════════════════════════════════════════════════════════════════
+
+See PHASE_5_INTEGRATION_GUIDE.md for complete code example.
+
+Key additions:
+1. Import admin pages at top
+2. Add admin routes in <Routes>
+3. Keep existing store routes
+4. Maintain PageTransition wrapper
+
+
+🎨 DESIGN SYSTEM TOKENS
+═══════════════════════════════════════════════════════════════════════════
+
+Colors:
+├── Primary: #4054B2
+├── Background: #F8FAFF
+├── White: white
+├── Success: green-600, green-100
+├── Warning: yellow-600, yellow-100
+├── Info: blue-600, blue-100
+├── Error: red-600, red-100
+└── Neutral: slate-900, slate-500, slate-200, slate-100
+
+Typography:
+├── Headings: font-bold text-slate-900
+├── Labels: font-medium text-slate-500
+├── Body: text-slate-700
+└── Secondary: text-slate-500
+
+Spacing:
+├── Card padding: p-6
+├── Section gap: gap-6
+├── Button padding: px-4 py-3
+└── Icon size: 20px
+
+Border Radius:
+├── Large: rounded-3xl (24px)
+├── Medium: rounded-2xl (16px)
+└── Small: rounded-lg (8px)
+
+
+🚀 NEXT PHASE: PHASE 6
+═══════════════════════════════════════════════════════════════════════════
+
+Will implement:
+✅ Events Management Page
+   • List events from API
+   • Add new event modal
+   • Edit event form
+   • Delete event functionality
+
+✅ Merchandise Management Page
+   • List products from API
+   • Add new product modal
+   • Edit product form
+   • Delete product functionality
+
+✅ Orders Management Page
+   • List all orders
+   • Filter by status
+   • View order details
+   • Update order status
+
+✅ Users Management Page
+   • List all users
+   • Filter by role
+   • Promote/Demote users
+   • Ban users
+
+Each page will use:
+• API integration with endpoints from Phase 4
+• Form handling for create/update
+• Confirmation dialogs for delete
+• Loading states
+• Error handling
+
+
+═══════════════════════════════════════════════════════════════════════════
+
+                    ✅ PHASE 5 COMPLETE
+
+Admin Dashboard layout and components ready for:
+  • User authentication
+  • Navigation between admin sections
+  • Dashboard overview with stats
+  • Recent orders display
+  • Mobile responsive design
+  • Design system adherence
+
+Awaiting approval to proceed to Phase 6: CRUD Implementation
+
+═══════════════════════════════════════════════════════════════════════════
+```

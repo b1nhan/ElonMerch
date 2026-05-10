@@ -1,0 +1,119 @@
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║                    JWT_SECRET FIX - EXACT COMMANDS TO RUN                    ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+
+STEP 1: Stop all containers
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+docker-compose down
+
+Expected: All containers stopped
+
+
+STEP 2: Rebuild PHP image (forces reading new environment variables)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+docker-compose build --no-cache php
+
+Expected: Image rebuilt (shows "=> naming to docker.io/library/...")
+
+
+STEP 3: Start all containers
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+docker-compose up -d
+
+Expected: All containers running
+
+
+STEP 4: Verify JWT_SECRET is in the PHP container
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+docker exec elonmerch_php sh -c 'echo $JWT_SECRET'
+
+Expected output: your_super_secret_jwt_key_change_this_in_production
+(or whatever you set in your .env file)
+
+
+STEP 5: Test token generation and verification
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+docker exec elonmerch_php php -r "
+require_once '/var/www/api/config/db.php';
+require_once '/var/www/api/utils/JwtToken.php';
+\$token = JwtToken::generate(['id' => 1, 'email' => 'test@example.com']);
+\$verified = JwtToken::verify(\$token);
+echo 'Token generated and verified: ' . (\$verified ? 'YES ✓' : 'NO ✗') . PHP_EOL;
+"
+
+Expected output: Token generated and verified: YES ✓
+
+
+STEP 6: Verify all containers are healthy
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+docker-compose ps
+
+Expected: All containers showing "Up" (MySQL may show "healthy")
+
+
+STEP 7: Test login and get a token
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+curl -X POST http://localhost:8000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@example.com","password":"password123"}'
+
+Expected: Response with "token" and "user" data
+(Adjust email/password to match your test user)
+
+
+STEP 8: Use token to call protected endpoint
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+curl -X GET http://localhost:8000/auth/profile \
+  -H "Authorization: Bearer PASTE_TOKEN_HERE"
+
+Expected: User profile data (NOT 401 Unauthorized)
+
+
+✓ IF YOU SEE THIS, YOUR JWT IS FIXED!
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Now test in Admin Dashboard:
+1. Go to http://localhost:8000
+2. Login with your admin account
+3. Go to Events Management
+4. Click "Add Event"
+5. Fill in the form and submit
+6. Should see "Event created successfully!" WITHOUT 401 errors
+
+═══════════════════════════════════════════════════════════════════════════════
+
+TROUBLESHOOTING: If something went wrong
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Still getting 401?
+
+Check 1 - Is JWT_SECRET in environment?
+  docker exec elonmerch_php sh -c 'echo $JWT_SECRET'
+  Should print: your_super_secret_jwt_key_change_this_in_production
+
+Check 2 - Can PHP read it?
+  docker exec elonmerch_php php -r "require_once '/var/www/api/config/db.php'; echo JWT_SECRET;"
+  Should print: your_super_secret_jwt_key_change_this_in_production
+
+Check 3 - Check PHP logs
+  docker-compose logs php
+
+Check 4 - Nuclear option (rebuild from scratch)
+  docker-compose down -v
+  docker-compose build --no-cache
+  docker-compose up -d
+
+═══════════════════════════════════════════════════════════════════════════════
+
+FILES UPDATED:
+✓ docker-compose.yml        - Added JWT_SECRET to PHP environment
+✓ api/config/db.php         - Uses getenv('JWT_SECRET')
+✓ api/utils/JwtToken.php    - Uses JWT_SECRET constant from db.php
+
+See documentation:
+JWT_FIX_QUICK_REFERENCE.md         (2 min read)
+DOCKER_JWT_SETUP_COMMANDS.md       (command reference)
+JWT_SYNCHRONIZATION_COMPLETE.md    (full documentation)
+JWT_ARCHITECTURE_DIAGRAMS.md       (visual diagrams)
+
+═══════════════════════════════════════════════════════════════════════════════

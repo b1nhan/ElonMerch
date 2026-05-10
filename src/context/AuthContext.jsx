@@ -1,65 +1,179 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { apiPost } from '../utils/api';
 
+/**
+ * Auth Context
+ * Handles authentication state and API communication with backend
+ */
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  //  LẤY PHIÊN ĐĂNG NHẬP HIỆN TẠI (SESSION)
-  const [user, setUser] = useState(() => {
-    const savedSession = localStorage.getItem('elon_session');
-    return savedSession ? JSON.parse(savedSession) : null;
-  });
+  const [user, setUser] = useState(null);
+  const [token, setToken] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  //  LƯU SESSION & ĐỒNG BỘ VÀO "DATABASE" MỖI KHI CÓ THAY ĐỔI
+  // Initialize auth from localStorage
   useEffect(() => {
-    if (user) {
-      // Lưu trạng thái đang đăng nhập
-      localStorage.setItem('elon_session', JSON.stringify(user));
-      
-      // LƯU VÀO DATABASE ĐỂ KHÔNG BỊ MẤT KHI ĐĂNG XUẤT
-      const db = JSON.parse(localStorage.getItem('elon_users_db')) || {};
-      db[user.email] = user; // Dùng email làm chìa khóa (key)
-      localStorage.setItem('elon_users_db', JSON.stringify(db));
-    } else {
-      // Khi Đăng xuất: Chỉ xóa phiên đăng nhập, KHÔNG xóa dữ liệu trong DB
-      localStorage.removeItem('elon_session');
-    }
-  }, [user]);
+    const savedToken = localStorage.getItem('token');
+    const savedUser = localStorage.getItem('user');
 
-  //  HÀM ĐĂNG NHẬP THÔNG MINH
-  const login = (userData) => {
-    const db = JSON.parse(localStorage.getItem('elon_users_db')) || {};
-    
-    // Nếu email này đã từng tồn tại trong DB -> Lấy lại Avatar, Tên, Đơn hàng cũ
-    if (db[userData.email]) {
-      setUser(db[userData.email]);
-    } else {
-      // Nếu email mới toanh -> Dùng dữ liệu mặc định
-      setUser(userData);
+    if (savedToken && savedUser) {
+      setToken(savedToken);
+      try {
+        setUser(JSON.parse(savedUser));
+      } catch (err) {
+        console.error('Error parsing saved user:', err);
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+      }
+    }
+  }, []);
+
+// --- CHỈ GIỮ LẠI CÁC HÀM NÀY, XÓA CÁC BẢN TRÙNG LẶP CŨ ---
+
+  /**
+   * Register new user - Bản chuẩn đã fix token
+   */
+  const register = async (name, email, password, phone = '', address = '') => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await apiPost('/auth/register', { name, email, password, phone, address });
+      let userData = null;
+      let newToken = null;
+
+      if (response.status === 'success' && response.data) {
+        userData = response.data.user;
+        newToken = response.data.token;
+      } else if (response.user && response.token) {
+        userData = response.user;
+        newToken = response.token;
+      }
+
+      if (newToken) {
+        setToken(newToken);
+        setUser(userData);
+        localStorage.setItem('token', newToken);
+        localStorage.setItem('user', JSON.stringify(userData));
+        return { success: true, message: 'Registration successful!', user: userData };
+      }
+      throw new Error(response.message || 'Registration failed');
+    } catch (err) {
+      setError(err.message);
+      return { success: false, message: err.message };
+    } finally { setLoading(false); }
+  };
+
+  /**
+   * Login user - Bản chuẩn đã fix token
+   */
+  const login = async (email, password) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await apiPost('/auth/login', { email, password });
+      let userData = null;
+      let newToken = null;
+
+      if (response.status === 'success' && response.data) {
+        userData = response.data.user;
+        newToken = response.data.token;
+      } else if (response.user && response.token) {
+        userData = response.user;
+        newToken = response.token;
+      }
+
+      if (newToken) {
+        setToken(newToken);
+        setUser(userData);
+        localStorage.setItem('token', newToken);
+        localStorage.setItem('user', JSON.stringify(userData));
+        return { success: true, message: 'Login successful!', user: userData };
+      }
+      throw new Error(response.message || 'Login failed');
+    } catch (err) {
+      setError(err.message);
+      return { success: false, message: err.message };
+    } finally { setLoading(false); }
+  };
+
+
+
+  /**
+   * Get current user profile
+   */
+  const getProfile = async () => {
+    if (!token) {
+      return null;
+    }
+
+    try {
+      const response = await apiPost('/auth/profile', {});
+
+      if (response.status === 'success') {
+        const userData = response.data;
+        setUser(userData);
+        localStorage.setItem('user', JSON.stringify(userData));
+        return userData;
+      }
+
+      return null;
+    } catch (err) {
+      console.error('Error fetching profile:', err);
+      return null;
     }
   };
 
+  /**
+   * Logout user
+   */
   const logout = () => {
     setUser(null);
+    setToken(null);
+    setError(null);
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
   };
 
-  const updateUser = (newInfo) => {
-    setUser((prevUser) => {
-      return { ...prevUser, ...newInfo }; 
-    });
+  /**
+   * Check if user is authenticated
+   */
+  const isAuthenticated = !!token && !!user;
+
+  /**
+   * Check if user is admin
+   */
+  const isAdmin = user?.role === 'admin';
+
+  const value = {
+    user,
+    token,
+    loading,
+    error,
+    register,
+    login,
+    logout,
+    getProfile,
+    isAuthenticated,
+    isAdmin,
+    setError,
   };
 
-  const addOrder = (order) => {
-    setUser((prevUser) => {
-      const currentOrders = prevUser?.orders || [];
-      return { ...prevUser, orders: [order, ...currentOrders] };
-    });
-  };
-
-  return (
-    <AuthContext.Provider value={{ user, login, logout, updateUser, addOrder }}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-export const useAuth = () => useContext(AuthContext);
+/**
+ * Hook to use Auth Context
+ */
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+
+  if (!context) {
+    throw new Error('useAuth must be used within AuthProvider');
+  }
+
+  return context;
+};
+
+export default AuthContext;
